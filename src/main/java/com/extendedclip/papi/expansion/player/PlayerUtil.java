@@ -92,46 +92,15 @@ public final class PlayerUtil {
         }
     };
 
+    /**
+     * Read the client language from Bukkit's stable API rather than obfuscated NMS fields.
+     * In particular, the old cO/cM field names are not valid on Paper 26.2.
+     */
     private static final Function<Player, String> PLAYER_GET_LOCALE = new Function<Player, String>() {
-
-        private Field locale;
-        private Method getHandle;
-
         @Override
         public String apply(final Player player) {
-            if (locale == null) {
-                try {
-                    cacheReflection(player);
-                } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException | NoSuchFieldException ex) {
-                    ex.printStackTrace();
-                }
-            }
-
-            try {
-                final Object entityPlayer = getHandle.invoke(player);
-                return (String) locale.get(entityPlayer);
-            } catch (final IllegalAccessException | InvocationTargetException ex) {
-                PlaceholderAPIPlugin.getInstance()
-                        .getLogger()
-                        .log(Level.SEVERE, "Could not get the locale of " + player.getName() + ", using 'en_US' as fallback value", ex);
-            }
-            return "en_US";
-        }
-
-
-        private void cacheReflection(final Player player) throws NoSuchFieldException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-            getHandle = player.getClass().getDeclaredMethod("getHandle");
-            getHandle.setAccessible(true);
-
-            final Object entityPlayer = getHandle.invoke(player);
-
-            if (VersionHelper.IS_1_20_4_OR_NEWER) {
-              locale = entityPlayer.getClass().getField("cO");
-            } else if (VersionHelper.IS_1_20_2_OR_NEWER) {
-              locale = entityPlayer.getClass().getField("cM");
-            } else {
-              locale = entityPlayer.getClass().getField("locale");
-            }
+            final String locale = player.getLocale();
+            return locale == null || locale.isEmpty() ? "en_US" : locale;
         }
     };
 
